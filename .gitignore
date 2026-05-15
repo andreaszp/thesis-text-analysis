@@ -1,1 +1,13 @@
+# Clé API — NE JAMAIS COMMITER
+.env
 
+# Données brutes
+data/
+outputs/
+
+# Python
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
