@@ -1,6 +1,4 @@
-bash
 
-cat > /home/claude/thesis_project/src/03_api_analysis.py << 'PYEOF'
 """
 03_api_analysis.py — Classification IA de chaque conversation via Claude API.
 La cle API est lue depuis .env — jamais en dur dans le code.
@@ -191,7 +189,5 @@ def run():
 
 if __name__ == "__main__":
     run()
-PYEOF
-Sortie
 
 exit code 0
