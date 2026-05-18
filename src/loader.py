@@ -1,6 +1,3 @@
-bash
-
-cat > /home/claude/thesis_project/src/loader.py << 'PYEOF'
 """
 loader.py — Chargement et nettoyage des données.
 Partagé par tous les modules.
@@ -54,7 +51,5 @@ def reconstruct_conversation(row):
         if pd.notna(resp) and str(resp).strip():
             lines.append(f"[B{i}]: {str(resp).strip()}")
     return "\n".join(lines)
-PYEOF
-Sortie
 
 exit code 0
