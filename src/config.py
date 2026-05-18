@@ -17,7 +17,7 @@ if not OPENAI_API_KEY:
 DATA_DIR    = ROOT / "data"
 OUTPUT_DIR  = ROOT / "outputs"
 OUTPUT_DIR.mkdir(exist_ok=True)
-EXCEL_FILE  = DATA_DIR / "Master_Thesis_April_7__2026_04_28.xlsx"
+EXCEL_FILE  = DATA_DIR / "Master_Thesis_May+12,+2026_02.02.xlsx"
 OUTPUT_FILE = OUTPUT_DIR / "Master_Thesis_Text_Analysis.xlsx"
 SHEET_NAME  = "Sheet0"
 MAX_TURNS   = 20
