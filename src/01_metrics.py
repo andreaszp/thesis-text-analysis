@@ -1,7 +1,4 @@
-bash
 
-cat > /home/claude/thesis_project/src/01_metrics.py << 'PYEOF'
-"""
 01_metrics.py — Métriques calculables sur les messages (longueur, structure, tours).
 Aucun appel API. Résultats stockés dans outputs/metrics.json
 """
