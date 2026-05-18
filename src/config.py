@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-if not ANTHROPIC_API_KEY:
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+if not OPENAI_API_KEY:
     print("WARNING: Aucune cle API. Creez .env a la racine (voir .env.example).")
 
 DATA_DIR    = ROOT / "data"
