@@ -1,7 +1,6 @@
-
 01_metrics.py — Métriques calculables sur les messages (longueur, structure, tours).
 Aucun appel API. Résultats stockés dans outputs/metrics.json
-"""
+
 import sys, json
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -198,7 +197,5 @@ def run():
 
 if __name__ == "__main__":
     run()
-PYEOF
-Sortie
 
 exit code 0
