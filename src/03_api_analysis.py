@@ -11,9 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import pandas as pd
-import anthropic
-
-from config import ANTHROPIC_API_KEY, OUTPUT_DIR, MSG_COLS, RESP_COLS
+from openai import OpenAI
+from config import OPENAI_API_KEY, OUTPUT_DIR, MSG_COLS, RESP_COLS
 from loader import load_clean_data, reconstruct_conversation
 
 # ── Prompt système (analyse des participants) ─────────────
@@ -107,30 +106,32 @@ def classify_one(conv_text, prompt_template, client, **kwargs):
     prompt = prompt_template.format(conv_text=conv_text[:3500], **kwargs)
     for attempt in range(3):
         try:
-            resp = client.messages.create(
-                model="claude-sonnet-4-20250514",
+            resp = client.chat.completions.create(
+                model="gpt-4o",       # ou "gpt-4o-mini" pour moins cher
                 max_tokens=1000,
+                response_format={"type": "json_object"},  # force le JSON
                 messages=[{"role": "user", "content": prompt}]
             )
-            raw  = resp.content[0].text.strip()
-            raw  = re.sub(r"```json\s*", "", raw)
-            raw  = re.sub(r"```\s*",     "", raw)
+            raw = resp.choices[0].message.content.strip()
             return json.loads(raw)
         except json.JSONDecodeError:
             if attempt == 2: return {"error": "json_decode", "classification_ok": False}
             time.sleep(2)
-        except anthropic.RateLimitError:
-            print("    Rate limit — attente 30s...")
-            time.sleep(30)
         except Exception as e:
-            if attempt == 2: return {"error": str(e), "classification_ok": False}
-            time.sleep(5)
+            err = str(e)
+            if "rate_limit" in err.lower():
+                print("    Rate limit — attente 30s...")
+                time.sleep(30)
+            elif attempt == 2:
+                return {"error": err, "classification_ok": False}
+            else:
+                time.sleep(5)
     return {"error": "max_retries", "classification_ok": False}
 
 def run():
-    if not ANTHROPIC_API_KEY:
-        print("ERREUR : ANTHROPIC_API_KEY non trouvée dans .env — abandon.")
-        return {}
+    if not OPENAI_API_KEY:
+      print("ERREUR : OPENAI_API_KEY non trouvée dans .env — abandon.")
+      return {}
 
     checkpoint_path = OUTPUT_DIR / "ai_results.json"
     # Reprise si interrompu
@@ -142,7 +143,7 @@ def run():
         done = {}
 
     df_clean, _, _ = load_clean_data()
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    client = OpenAI(api_key=OPENAI_API_KEY)
 
     total = len(df_clean)
     print(f"\nClassification IA — {total} conversations")
