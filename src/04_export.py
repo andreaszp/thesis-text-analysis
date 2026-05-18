@@ -579,5 +579,3 @@ def run():
 if __name__ == "__main__":
     import sys, importlib
     run()
-
-exit code 0
