@@ -1,5 +1,3 @@
-
-cat > /home/claude/thesis_project/src/config.py << 'PYEOF'
 """
 config.py — Configuration partagée entre tous les scripts.
 Chargement securise de la cle API + stopwords + constantes.
@@ -76,6 +74,5 @@ COLOR_FL22 = "#7B3F00"
 COLOR_HDR  = "#1F4E79"
 COLOR_ALT  = "#EBF5FB"
 PALETTE    = [COLOR_FL21, COLOR_FL22]
-PYEOF
 
 exit code 0 
