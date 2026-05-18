@@ -1,5 +1,5 @@
-01_metrics.py — Métriques calculables sur les messages (longueur, structure, tours).
-Aucun appel API. Résultats stockés dans outputs/metrics.json
+"""01_metrics.py — Métriques calculables sur les messages (longueur, structure, tours).
+Aucun appel API. Résultats stockés dans outputs/metrics.json"""
 
 import sys, json
 from pathlib import Path
