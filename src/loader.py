@@ -52,4 +52,3 @@ def reconstruct_conversation(row):
             lines.append(f"[B{i}]: {str(resp).strip()}")
     return "\n".join(lines)
 
-exit code 0
