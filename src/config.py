@@ -75,4 +75,3 @@ COLOR_HDR  = "#1F4E79"
 COLOR_ALT  = "#EBF5FB"
 PALETTE    = [COLOR_FL21, COLOR_FL22]
 
-exit code 0 
