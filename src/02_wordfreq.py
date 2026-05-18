@@ -1,6 +1,4 @@
-bash
 
-cat > /home/claude/thesis_project/src/02_wordfreq.py << 'PYEOF'
 """
 02_wordfreq.py — Fréquences de mots, TF-IDF, WordClouds.
 Sauvegarde outputs/wordfreq.json et les images PNG.
@@ -175,7 +173,5 @@ def run():
 
 if __name__ == "__main__":
     run()
-PYEOF
-Sortie
 
 exit code 0
