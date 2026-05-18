@@ -1,6 +1,3 @@
-bash
-
-cat > /home/claude/thesis_project/src/04_export.py << 'PYEOF'
 """
 04_export.py — Génère le fichier Excel final avec toutes les feuilles.
 Lance aussi les étapes 01, 02, 03 si les JSON intermédiaires n'existent pas.
@@ -582,7 +579,5 @@ def run():
 if __name__ == "__main__":
     import sys, importlib
     run()
-PYEOF
-Sortie
 
 exit code 0
