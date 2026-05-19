@@ -1,0 +1,115 @@
+"""
+02_questionnaire_analysis.py
+Block 1 — Step 2: Comparative analysis of questionnaire DVs by chatbot tone.
+Saves: outputs/q_ttests.json, outputs/q_constructs.json
+"""
+import sys, json
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent))
+
+import pandas as pd
+import numpy as np
+from scipy import stats
+from scipy.stats import levene
+from config import OUTPUT_DIR, ALL_Q_COLS, NUM_COLS, EXCEL_LETTERS, Q_LABELS, CONSTRUCTS, COL_SCALE, LIKERT_7, CAPABLE_7, AMOUNT_7
+
+def cohens_d(g1, g2):
+    n1, n2 = len(g1), len(g2)
+    if n1 < 2 or n2 < 2: return np.nan
+    pool = np.sqrt(((n1-1)*np.std(g1,ddof=1)**2+(n2-1)*np.std(g2,ddof=1)**2)/(n1+n2-2))
+    return (np.mean(g1)-np.mean(g2))/pool if pool > 0 else np.nan
+
+def interpret_d(d):
+    if pd.isna(d): return "n/a"
+    d = abs(d)
+    if d < 0.2: return "negligible"
+    if d < 0.5: return "small"
+    if d < 0.8: return "medium"
+    return "large"
+
+def sig_label(p):
+    if pd.isna(p): return "n/a"
+    if p < 0.001: return "***"
+    if p < 0.01:  return "**"
+    if p < 0.05:  return "*"
+    return "ns"
+
+def run():
+    df_fl21 = pd.read_json(OUTPUT_DIR / "df_fl21.json")
+    df_fl22 = pd.read_json(OUTPUT_DIR / "df_fl22.json")
+
+    scale_name = {
+        c: ("Likert" if m is LIKERT_7 else "Capable" if m is CAPABLE_7 else "Amount")
+        for c, m in COL_SCALE.items()
+    }
+    construct_map = {}
+    for constr, cols in CONSTRUCTS.items():
+        for c in cols: construct_map[c] = constr
+
+    # ── T-tests per question ──────────────────────────────
+    ttest_rows = []
+    for col, nc, el, ql in zip(ALL_Q_COLS, NUM_COLS, EXCEL_LETTERS, Q_LABELS):
+        g21 = df_fl21[nc].dropna().values if nc in df_fl21 else np.array([])
+        g22 = df_fl22[nc].dropna().values if nc in df_fl22 else np.array([])
+        if len(g21) > 1 and len(g22) > 1:
+            t_s, p_v   = stats.ttest_ind(g21, g22)
+            lev_s, lev_p = levene(g21, g22)
+            d          = cohens_d(g21, g22)
+        else:
+            t_s = p_v = lev_s = lev_p = d = np.nan
+        ttest_rows.append({
+            "excel_col":   el, "variable": col, "label": ql,
+            "scale":       scale_name.get(col,""), "construct": construct_map.get(col,""),
+            "n_fl21":      len(g21), "mean_fl21": round(float(np.mean(g21)),3) if len(g21) else None,
+            "sd_fl21":     round(float(np.std(g21,ddof=1)),3) if len(g21)>1 else None,
+            "n_fl22":      len(g22), "mean_fl22": round(float(np.mean(g22)),3) if len(g22) else None,
+            "sd_fl22":     round(float(np.std(g22,ddof=1)),3) if len(g22)>1 else None,
+            "delta":       round(float(np.mean(g21)-np.mean(g22)),3) if len(g21) and len(g22) else None,
+            "t":           round(float(t_s),4) if not np.isnan(t_s) else None,
+            "p":           round(float(p_v),4) if not np.isnan(p_v) else None,
+            "sig":         sig_label(p_v),
+            "cohens_d":    round(float(d),3) if not np.isnan(d) else None,
+            "effect_size": interpret_d(d),
+            "levene_p":    round(float(lev_p),4) if not np.isnan(lev_p) else None,
+        })
+    df_ttests = pd.DataFrame(ttest_rows)
+
+    # ── Construct-level summary ───────────────────────────
+    construct_rows = []
+    for constr, cols in CONSTRUCTS.items():
+        nc_list = [c+"_num" for c in cols]
+        g21_all = np.concatenate([df_fl21[nc].dropna().values for nc in nc_list if nc in df_fl21.columns])
+        g22_all = np.concatenate([df_fl22[nc].dropna().values for nc in nc_list if nc in df_fl22.columns])
+        if len(g21_all)>1 and len(g22_all)>1:
+            t_s, p_v = stats.ttest_ind(g21_all, g22_all)
+            d        = cohens_d(g21_all, g22_all)
+        else:
+            t_s = p_v = d = np.nan
+        construct_rows.append({
+            "construct":  constr, "n_items": len(cols),
+            "n_fl21":     len(df_fl21), "mean_fl21": round(float(np.mean(g21_all)),3) if len(g21_all) else None,
+            "sd_fl21":    round(float(np.std(g21_all,ddof=1)),3) if len(g21_all)>1 else None,
+            "n_fl22":     len(df_fl22), "mean_fl22": round(float(np.mean(g22_all)),3) if len(g22_all) else None,
+            "sd_fl22":    round(float(np.std(g22_all,ddof=1)),3) if len(g22_all)>1 else None,
+            "delta":      round(float(np.mean(g21_all)-np.mean(g22_all)),3) if len(g21_all) and len(g22_all) else None,
+            "t":          round(float(t_s),4) if not np.isnan(t_s) else None,
+            "p":          round(float(p_v),4) if not np.isnan(p_v) else None,
+            "sig":        sig_label(p_v),
+            "cohens_d":   round(float(d),3) if not np.isnan(d) else None,
+            "effect_size":interpret_d(d),
+        })
+    df_constructs = pd.DataFrame(construct_rows)
+
+    # ── Save ──────────────────────────────────────────────
+    df_ttests.to_json(   OUTPUT_DIR/"q_ttests.json",    orient="records", force_ascii=False)
+    df_constructs.to_json(OUTPUT_DIR/"q_constructs.json",orient="records",force_ascii=False)
+
+    print("Questionnaire analysis complete")
+    sig = df_ttests[df_ttests["sig"].isin(["*","**","***"])]
+    print(f"  Significant DVs (p<.05): {len(sig)}/{len(df_ttests)}")
+    for _, r in sig.iterrows():
+        print(f"    {r['label']:40s}  FL21={r['mean_fl21']}  FL22={r['mean_fl22']}  p={r['p']} {r['sig']}  d={r['cohens_d']} ({r['effect_size']})")
+    return df_ttests, df_constructs
+
+if __name__ == "__main__":
+    run()
