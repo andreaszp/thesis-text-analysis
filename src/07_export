@@ -641,6 +641,179 @@ def run():
         ws14.column_dimensions[get_column_letter(j)].width=w
     print("  Sheet 14 — Turn progression")
 
+# ────────────────────────────────────────────────────────────
+    # SHEET 15 — Mediation analyses
+    # ────────────────────────────────────────────────────────────
+    ws15 = wb.create_sheet("15_Mediation_Analyses")
+    title_row(ws15, "Simple mediation analyses — Bootstrap 5000 samples, 95% CI (Hayes/PROCESS style)", COLOR_HDR, 12)
+
+    med_path = OUTPUT_DIR / "mediation.json"
+    if med_path.exists():
+        with open(med_path, encoding="utf-8") as f:
+            med_results = json.load(f)
+
+        # Legend row
+        ws15.merge_cells("A2:L2")
+        leg = ws15.cell(row=2, column=1,
+                        value="IV: Chatbot tone (FL_21=+1, FL_22=−1)  |  "
+                              "Mediator: AI Competence_1  |  "
+                              "Significant indirect effect = 95% CI excludes 0")
+        leg.font      = Font(italic=True, name="Arial", size=9, color="555555")
+        leg.alignment = Alignment(horizontal="left", vertical="center")
+
+        current_row = 4
+        PATH_COLORS = {
+            "path_a":       "2E75B6",
+            "path_b":       "1A6634",
+            "path_c":       "7B3F00",
+            "path_c_prime": "6C3483",
+            "indirect_effect": "C0392B",
+        }
+        PATH_LABELS = {
+            "path_a":        "Path a  — IV → Mediator",
+            "path_b":        "Path b  — Mediator → DV (controlling IV)",
+            "path_c":        "Path c  — IV → DV (total effect)",
+            "path_c_prime":  "Path c' — IV → DV (direct effect)",
+            "indirect_effect":"Indirect effect a×b (bootstrapped)",
+        }
+
+        for med in med_results:
+            if "error" in med and "path_a" not in med:
+                ws15.cell(row=current_row, column=1,
+                          value=f"{med.get('name','')} — ERROR: {med.get('error','')}").font = Font(name="Arial", size=10, color="FF0000")
+                current_row += 2
+                continue
+
+            # Mediation title block
+            ws15.merge_cells(start_row=current_row, start_column=1,
+                             end_row=current_row, end_column=12)
+            c = ws15.cell(row=current_row, column=1,
+                          value=f"{med.get('name','')}  —  "
+                                f"Tone → Competence_1 → {med.get('dv_label','')}")
+            c.font      = Font(bold=True, color="FFFFFF", name="Arial", size=11)
+            c.fill      = PatternFill("solid", start_color="1F4E79")
+            c.alignment = Alignment(horizontal="left", vertical="center")
+            ws15.row_dimensions[current_row].height = 24
+            current_row += 1
+
+            # Info row
+            ws15.cell(row=current_row, column=1,
+                      value=f"n = {med.get('n','')}  |  "
+                            f"Bootstrap samples = {med.get('n_bootstrap',5000)}  |  "
+                            f"Confidence level = {int((1-med.get('alpha',0.05))*100)}%").font = Font(italic=True, name="Arial", size=9)
+            current_row += 1
+
+            # Column headers
+            hdrs_med = ["Path", "Description", "b (coef)", "SE", "t", "p-value", "Sig.",
+                        "95% CI lower", "95% CI upper", "Significant?", "Interpretation"]
+            for j, h in enumerate(hdrs_med, 1):
+                hdr(ws15.cell(row=current_row, column=j, value=h), bg="2C3E50", sz=9)
+            ws15.row_dimensions[current_row].height = 22
+            current_row += 1
+
+            # Path rows
+            for path_key, path_label in PATH_LABELS.items():
+                pdata = med.get(path_key, {})
+                if not pdata:
+                    continue
+                r = current_row
+                color = PATH_COLORS[path_key]
+
+                c = ws15.cell(row=r, column=1, value=path_key.replace("_", " ").upper())
+                c.font  = Font(bold=True, color="FFFFFF", name="Arial", size=9)
+                c.fill  = PatternFill("solid", start_color=color)
+                c.border = THIN
+                c.alignment = Alignment(horizontal="center", vertical="center")
+
+                dat(ws15.cell(r, 2), path_label, center=False)
+                dat(ws15.cell(r, 3), pdata.get("coef"),      fmt="0.0000")
+                dat(ws15.cell(r, 4), pdata.get("se"),        fmt="0.0000")
+                dat(ws15.cell(r, 5), pdata.get("t"),         fmt="0.0000")
+
+                # p-value (not available for indirect)
+                if path_key == "indirect_effect":
+                    ws15.cell(row=r, column=6).value  = "—"
+                    ws15.cell(row=r, column=6).border = THIN
+                    ws15.cell(row=r, column=6).alignment = Alignment(horizontal="center")
+                    ws15.cell(row=r, column=7).value  = "—"
+                    ws15.cell(row=r, column=7).border = THIN
+                else:
+                    pval(ws15.cell(r, 6), pdata.get("p"))
+                    dat(ws15.cell(r, 7), pdata.get("sig", ""), bold=True)
+
+                # CI columns
+                if path_key == "indirect_effect":
+                    ci_low = pdata.get("ci_lower")
+                    ci_up  = pdata.get("ci_upper")
+                    sig_i  = pdata.get("significant", False)
+
+                    c_low = ws15.cell(row=r, column=8, value=ci_low)
+                    c_up  = ws15.cell(row=r, column=9, value=ci_up)
+                    for cc in [c_low, c_up]:
+                        cc.border = THIN
+                        cc.alignment = Alignment(horizontal="center", vertical="center")
+                        cc.number_format = "0.0000"
+                        if ci_low is not None and ci_up is not None:
+                            if sig_i:
+                                cc.fill = PatternFill("solid", start_color="D5F5E3")
+                                cc.font = Font(name="Arial", size=9, bold=True, color="1A6634")
+                            else:
+                                cc.fill = PatternFill("solid", start_color="FADBD8")
+                                cc.font = Font(name="Arial", size=9, color="922B21")
+
+                    sig_cell = ws15.cell(row=r, column=10,
+                                         value="YES ✓" if sig_i else "NO ✗")
+                    sig_cell.border = THIN
+                    sig_cell.alignment = Alignment(horizontal="center", vertical="center")
+                    if sig_i:
+                        sig_cell.fill = PatternFill("solid", start_color="1A6634")
+                        sig_cell.font = Font(name="Arial", size=9, bold=True, color="FFFFFF")
+                    else:
+                        sig_cell.fill = PatternFill("solid", start_color="FADBD8")
+                        sig_cell.font = Font(name="Arial", size=9, color="922B21")
+
+                    interp = ws15.cell(row=r, column=11,
+                                        value=pdata.get("interpretation", ""))
+                    interp.border = THIN
+                    interp.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+                    interp.font = Font(name="Arial", size=9, italic=True)
+                else:
+                    for j in [8, 9, 10, 11]:
+                        ws15.cell(row=r, column=j).value  = "—"
+                        ws15.cell(row=r, column=j).border = THIN
+                        ws15.cell(row=r, column=j).alignment = Alignment(horizontal="center")
+
+                ws15.row_dimensions[r].height = 20
+                current_row += 1
+
+            # Mediation type summary
+            med_type = med.get("mediation_type", "")
+            ws15.merge_cells(start_row=current_row, start_column=1,
+                             end_row=current_row, end_column=11)
+            c = ws15.cell(row=current_row, column=1,
+                          value=f"Conclusion: {med_type}")
+            is_mediation = "No mediation" not in med_type and "Inconsistent" not in med_type
+            c.font  = Font(bold=True, name="Arial", size=10,
+                           color="FFFFFF" if is_mediation else "922B21")
+            c.fill  = PatternFill("solid",
+                                  start_color="1A6634" if is_mediation else "FADBD8")
+            c.alignment = Alignment(horizontal="left", vertical="center")
+            c.border = THIN
+            ws15.row_dimensions[current_row].height = 22
+            current_row += 3  # space between analyses
+
+        # Column widths
+        col_widths_med = [16, 40, 10, 10, 10, 14, 8, 12, 12, 14, 35]
+        for j, w in enumerate(col_widths_med, 1):
+            ws15.column_dimensions[get_column_letter(j)].width = w
+
+    else:
+        ws15.cell(row=2, column=1,
+                  value="mediation.json not found — run 08_mediation.py first").font = Font(
+                  name="Arial", size=10, color="FF0000", italic=True)
+
+    print("  Sheet 15 — Mediation analyses")
+
     # ── Save ─────────────────────────────────────────────────────
     wb.save(OUTPUT_FILE)
     print(f"\nExcel saved: {OUTPUT_FILE}")
