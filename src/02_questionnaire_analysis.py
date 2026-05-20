@@ -442,8 +442,6 @@ def run():
                 if isinstance(obj, np.floating): return float(obj)
                 if isinstance(obj, np.ndarray): return obj.tolist()
                 return super().default(obj)
-
-    json.dump(results, f, ensure_ascii=False, indent=2, cls=NumpyEncoder)
     print(f"\nResults saved → {out_path}")
     return results
 
