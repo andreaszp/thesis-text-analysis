@@ -112,7 +112,7 @@ def run_analysis():
     return df_ttests, df_constructs
 
 if __name__ == "__main__":
-    run()
+    run_analysis()
 
 """
 Block 1 — Step 3: Simple mediation analyses with bootstrap (Hayes/PROCESS style).
