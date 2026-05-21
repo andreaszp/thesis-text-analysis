@@ -439,6 +439,30 @@ def run():
         for j,col in enumerate(ai_cols,1):
             ws9.column_dimensions[get_column_letter(j)].width=40 if col in ["summary","key_verbatim"] else 18
         ws9.freeze_panes="A3"
+      # Summary by tone
+    if not df_ai.empty:
+        row_sum = len(df_ai) + 5
+        title_row(ws9, "Summary by chatbot tone — mean scores FL_21 vs FL_22",
+                  "2C3E50", len(ai_cols), row=row_sum)
+        score_cols = ["quality_global","quality_precision","quality_examples",
+                      "quality_relevance","quality_richness","action_global",
+                      "profile_engagement","profile_expertise",
+                      "bot_score_friendly","bot_score_professional","bot_compliance_score"]
+        score_cols = [c for c in score_cols if c in df_ai.columns]
+        for j, col in enumerate(["Metric"] + ["FL_21 mean","FL_21 SD","FL_22 mean","FL_22 SD","Δ (21-22)"], 1):
+            hdr(ws9.cell(row=row_sum+1, column=j, value=col), bg="2C3E50", sz=9)
+        for i, col in enumerate(score_cols):
+            r = row_sum + 2 + i
+            alt = (i % 2 == 0)
+            g21 = df_ai[df_ai["version"]=="FL_21"][col].dropna()
+            g22 = df_ai[df_ai["version"]=="FL_22"][col].dropna()
+            dat(ws9.cell(r,1), col, center=False, alt=alt, bold=True)
+            dat(ws9.cell(r,2), round(g21.mean(),3) if len(g21) else None, alt=alt, fmt="0.000")
+            dat(ws9.cell(r,3), round(g21.std(ddof=1),3) if len(g21)>1 else None, alt=alt, fmt="0.000")
+            dat(ws9.cell(r,4), round(g22.mean(),3) if len(g22) else None, alt=alt, fmt="0.000")
+            dat(ws9.cell(r,5), round(g22.std(ddof=1),3) if len(g22)>1 else None, alt=alt, fmt="0.000")
+            delta_cell(ws9.cell(r,6),
+                       round(g21.mean()-g22.mean(),3) if len(g21) and len(g22) else None)
     print("  Sheet 09 — AI results per participant")
 
     # ────────────────────────────────────────────────────────────
