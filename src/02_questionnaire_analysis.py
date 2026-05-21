@@ -309,7 +309,7 @@ def _mediation_type(p_a, p_b, p_c_prime, sig_indirect):
 # RUN
 # ================================================================
 
-def run():
+def run_mediation_analyses():
     # Load cleaned data
     df_path = OUTPUT_DIR / "df_clean.json"
     if not df_path.exists():
@@ -447,4 +447,4 @@ def run():
     
 if __name__ == "__main__":
     run_analysis()
-    run()
+    run_mediation_analyses()
