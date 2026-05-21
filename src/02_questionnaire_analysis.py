@@ -442,6 +442,18 @@ def run():
                 if isinstance(obj, np.floating): return float(obj)
                 if isinstance(obj, np.ndarray): return obj.tolist()
                 return super().default(obj)
+        json.dump(results, f, ensure_ascii=False, indent=2, cls=NumpyEncoder)
+    print(f"\nResults saved → {out_path}")
+    
+    out_path = OUTPUT_DIR / "mediation.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                import numpy as np
+                if isinstance(obj, (np.bool_, np.integer)): return int(obj)
+                if isinstance(obj, np.floating): return float(obj)
+                if isinstance(obj, np.ndarray): return obj.tolist()
+                return super().default(obj)
     print(f"\nResults saved → {out_path}")
     return results
 
