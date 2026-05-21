@@ -488,7 +488,7 @@ def run():
                 if abs(rv)>=0.5:   rc.fill=PatternFill("solid",start_color="1A6634"); rc.font=Font(name="Arial",size=9,bold=True,color="FFFFFF")
                 elif abs(rv)>=0.3: rc.fill=PatternFill("solid",start_color="A8D8A8"); rc.font=Font(name="Arial",size=9)
                 else:              rc.font=Font(name="Arial",size=9)
-                if alt: rc.fill=PatternFill("solid",start_color="D5F5E3") if abs(rv)>=0.5 else rc.fill
+                if alt and abs(rv) < 0.5: rc.fill=PatternFill("solid",start_color=COLOR_ALT)
             pval(ws11.cell(rr,6), r.get("p"))
             dat(ws11.cell(rr,7), r.get("sig",""),       alt=alt, bold=True)
             dat(ws11.cell(rr,8), r.get("strength",""),  alt=alt)
