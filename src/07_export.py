@@ -212,7 +212,7 @@ def run():
     # ────────────────────────────────────────────────────────────
     ws1 = wb.active; ws1.title = "01_Raw_Data_Cleaned"
     if not df_clean.empty:
-        cols_show = [c for c in df_clean.columns if not c.endswith("_num")][:50]
+        cols_show = [c for c in df_clean.columns if not c.endswith("_num")]
         write_df(ws1, df_clean[cols_show], f"Raw cleaned data — all respondents (n={len(df_clean)})", COLOR_HDR)
     print("  Sheet 01 — Raw data")
 
@@ -221,7 +221,7 @@ def run():
     # ────────────────────────────────────────────────────────────
     ws2 = wb.create_sheet("02_FL21_Friendly")
     if not df_fl21.empty:
-        cols_show = [c for c in df_fl21.columns if not c.endswith("_num")][:50]
+        cols_show = [c for c in df_fl21.columns if not c.endswith("_num")]
         write_df(ws2, df_fl21[cols_show], f"FL_21 — Friendly tone (n={len(df_fl21)})", COLOR_FL21)
     print("  Sheet 02 — FL_21")
 
@@ -230,7 +230,7 @@ def run():
     # ────────────────────────────────────────────────────────────
     ws3 = wb.create_sheet("03_FL22_Professional")
     if not df_fl22.empty:
-        cols_show = [c for c in df_fl22.columns if not c.endswith("_num")][:50]
+        cols_show = [c for c in df_fl22.columns if not c.endswith("_num")]
         write_df(ws3, df_fl22[cols_show], f"FL_22 — Professional tone (n={len(df_fl22)})", COLOR_FL22)
     print("  Sheet 03 — FL_22")
 
