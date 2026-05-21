@@ -34,7 +34,7 @@ def sig_label(p):
     if p < 0.05:  return "*"
     return "ns"
 
-def run():
+def run_analysis():
     df_fl21 = pd.read_json(OUTPUT_DIR / "df_fl21.json")
     df_fl22 = pd.read_json(OUTPUT_DIR / "df_fl22.json")
 
