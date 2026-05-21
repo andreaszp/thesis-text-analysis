@@ -650,7 +650,12 @@ def run():
     med_path = OUTPUT_DIR / "mediation.json"
     if med_path.exists():
         with open(med_path, encoding="utf-8") as f:
-            med_results = json.load(f)
+          content = f.read().strip()
+        if not content:
+          print("  ⚠️  mediation.json is empty — skipping Sheet 15")
+          med_results = []
+        else:
+            med_results = json.loads(content)
 
         # Legend row
         ws15.merge_cells("A2:L2")
