@@ -440,7 +440,9 @@ def run():
     df_clean["conv_ended_properly"] = df_clean.apply(detect_proper_end, axis=1)
     df_clean["last_msg_type"]       = df_clean.apply(classify_last_msg,  axis=1)
 
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    import os
+    api_key = os.environ.get("OPENAI_API_KEY", "").strip() or OPENAI_API_KEY.strip()
+    client = OpenAI(api_key=api_key)
     total  = len(df_clean)
     print(f"\nAI Analysis — {total} conversations | model: gpt-4o-mini | est. cost: ~$0.15-0.25\n")
 
