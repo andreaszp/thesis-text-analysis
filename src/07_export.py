@@ -482,6 +482,8 @@ def build_sheet5(wb):
          "1=participant formulates an improvement a product team could implement directly, 0=vague wish not directly implementable"),
         ("action_use_case","Precise use case","Binary 0/1","AI (GPT-4o-mini)","Binary",
          "1=participant describes precise usage context (when/where/how/why they use the app), 0=usage described generically"),
+        ("content_emotion","Emotion expressed","Binary 0/1","AI (GPT-4o-mini)","Binary",
+         "1=participant expresses a clear emotion (frustration, satisfaction, etc.) with at least some context, 0=purely factual tone no emotion expressed"),
         # TEXT METRICS
         ("TEXT METRICS (computed with NLTK)",C_METRICS,None,None,None,None),
         ("avg_words_per_msg","Avg words per message","Count","NLTK tokenizer","Continuous",
