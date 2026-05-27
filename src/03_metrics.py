@@ -107,39 +107,44 @@ def run():
     df_resp   = compute_metrics(resps_all)
 
     # Participant-level aggregation
+    # NOTE: avg_ttr, avg_sentiment and pct_questions still computed here for
+    # descriptive/archival purposes but excluded from main t-test analysis
     df_agg = df_msg.groupby(["respondent","version"]).agg(
-        n_messages       =("text","count"),
-        total_words      =("n_words","sum"),
-        avg_words_per_msg=("n_words","mean"),
-        avg_word_len     =("avg_word_len","mean"),
-        avg_ttr          =("type_token_ratio","mean"),
-        pct_questions    =("has_question","mean"),
-        avg_sentiment    =("compound","mean"),
+        n_messages        =("text","count"),
+        total_words       =("n_words","sum"),
+        avg_words_per_msg =("n_words","mean"),
+        avg_word_len      =("avg_word_len","mean"),
+        avg_ttr           =("type_token_ratio","mean"),   # kept for descriptive use only
+        pct_questions     =("has_question","mean"),        # kept for descriptive use only
+        avg_sentiment     =("compound","mean"),            # kept for descriptive use only
     ).reset_index()
 
-    # T-tests on metrics
+    # ── T-tests on RETAINED metrics only ─────────────────────────────────────
+    # Removed from main analysis: avg_ttr (r=-0.788 with words, length artefact)
+    # avg_sentiment (r=0.590 with words, length artefact), pct_questions (quasi-zero)
     dm21, dm22 = df_msg[df_msg["version"]=="FL_21"], df_msg[df_msg["version"]=="FL_22"]
     dr21, dr22 = df_resp[df_resp["version"]=="FL_21"], df_resp[df_resp["version"]=="FL_22"]
     am21, am22 = df_agg[df_agg["version"]=="FL_21"], df_agg[df_agg["version"]=="FL_22"]
 
+    # Per-message t-tests: words, chars, sentences, word length (ttr/sentiment REMOVED)
     msg_ttests = [ttest_pair(dm21[c],dm22[c],l) for c,l in [
-        ("n_words","Words per message"),("n_chars","Chars per message"),
-        ("n_sentences","Sentences per message"),("avg_word_len","Avg word length"),
-        ("type_token_ratio","Lexical richness (TTR)"),
-        ("has_question","% messages with '?'"),("compound","VADER sentiment"),
+        ("n_words","Words per message"),
+        ("n_chars","Chars per message"),
+        ("n_sentences","Sentences per message"),
+        ("avg_word_len","Avg word length"),
     ] if ttest_pair(dm21[c],dm22[c],l)]
 
     resp_ttests = [ttest_pair(dr21[c],dr22[c],l) for c,l in [
-        ("n_words","Words per message"),("n_chars","Chars per message"),
-        ("n_sentences","Sentences per message"),("avg_word_len","Avg word length"),
-        ("compound","VADER sentiment"),
+        ("n_words","Words per message"),
+        ("n_chars","Chars per message"),
+        ("n_sentences","Sentences per message"),
+        ("avg_word_len","Avg word length"),
     ] if ttest_pair(dr21[c],dr22[c],l)]
 
+    # Per-participant t-tests: words and word_len only (ttr/questions/sentiment REMOVED)
     agg_ttests = [ttest_pair(am21[c],am22[c],l) for c,l in [
         ("avg_words_per_msg","Avg words/msg (per participant)"),
-        ("avg_ttr","Lexical richness (per participant)"),
-        ("pct_questions","% questions (per participant)"),
-        ("avg_sentiment","Avg sentiment (per participant)"),
+        ("avg_word_len","Avg word length (per participant)"),
     ] if ttest_pair(am21[c],am22[c],l)]
 
     # Turns stats
@@ -171,6 +176,12 @@ def run():
         "msg_per_message":     [r for r in msg_ttests  if r],
         "resp_per_message":    [r for r in resp_ttests if r],
         "msg_per_participant": [r for r in agg_ttests  if r],
+        # Descriptive note for removed variables
+        "removed_from_analysis": {
+            "avg_ttr":        "Removed: r=-0.788 with avg_words_per_msg (length artefact)",
+            "avg_sentiment":  "Removed: r=0.590 with avg_words_per_msg (length artefact); no sig. difference",
+            "pct_questions":  "Removed: quasi-zero base rate (1.57% vs 0.45%); no discriminant power",
+        }
     }
 
     with open(OUTPUT_DIR/"metrics.json","w",encoding="utf-8") as f:
