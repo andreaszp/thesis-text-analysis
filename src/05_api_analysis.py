@@ -4,6 +4,7 @@ Block 2 — Step 3: AI classification of each conversation via OpenAI API.
 API key loaded from .env — never hardcoded.
 Checkpoint every 5 conversations — safe to restart.
 Saves: outputs/ai_results.json, df_ai.json, df_progression.json
+
 """
 import sys, json, time, re
 from pathlib import Path
@@ -100,55 +101,20 @@ score_richness:
   5 = Rich vocabulary, precise register, fine nuances
 
 ACTIONABILITY (1-5):
-score_global:
-  1 = Nothing actionable, only generalities
-  2 = A vague lead but not directly exploitable
-  3 = One concrete element but insufficiently developed
-  4 = Several elements directly exploitable by a product team
-  5 = Very rich feedback: precise problems + context + applicable suggestions
-
 contains_concrete_problem:
   true = Participant describes a precise problem with context (when X happens, Y occurs, because Z)
   false = Vague dissatisfaction without problem description
 
 contains_applicable_advice:
   true = Participant formulates an improvement a product team could implement directly
-        (e.g. "it should be possible to download playlists offline")
-  false = Vague wish not directly implementable (e.g. "it would be better if it was nicer")
-
-contains_precise_use_case:
-  true = Participant describes a precise usage context (when/where/how/why they use the app)
-  false = Usage described generically without context
+  false = Vague wish not directly implementable
 
 CONTENT TYPE:
-personal_opinion:
-  true = Participant clearly expresses a personal point of view
-  false = Limited to facts or descriptions without personal stance
-
-concrete_vs_vague_problem:
-  true = At least one problem described with precise context
-  false = Dissatisfaction expressed only vaguely
-
 suggestion_feature_request:
   true = Participant explicitly proposes a feature or improvement
   false = No concrete suggestion
 
-emotion_frustration_satisfaction:
-  true = Participant expresses a clear emotion with at least some context
-  false = Purely factual tone, no emotion expressed
-
-competitor_comparison:
-  true = Participant explicitly mentions another app or competing service
-  false = No external comparison
-
 PARTICIPANT PROFILE:
-engagement_global (1-5):
-  1 = Answers in 1-3 words systematically, never develops, seems eager to finish
-  2 = Short sentences, little context, rare development
-  3 = Develops sometimes, often remains superficial
-  4 = Develops often, gives context, seems involved
-  5 = Develops systematically, gives examples spontaneously, shows genuine interest
-
 elaboration:
   "short" = messages average < 10 words
   "medium" = messages average 10-30 words
@@ -158,13 +124,6 @@ coherence:
   "low" = contradictory or off-topic answers frequent
   "medium" = some inconsistencies or digressions
   "high" = coherent, logical discourse, easy to follow
-
-perceived_expertise (mastery of subject in their feedback):
-  1 = Vague feedback, generalities without grounding
-  2 = Some details but no precise vocabulary or clear usage context
-  3 = Describes usage with context, some examples, remains surface-level
-  4 = Structured feedback, precise vocabulary, identifies what is wrong
-  5 = Expert feedback: identifies systemic problems, proposes precise solutions, masters UX/product vocabulary
 
 TURN-BY-TURN PROGRESSION:
 IMPORTANT:
@@ -210,24 +169,16 @@ Reply ONLY with valid JSON, no markdown, no text before or after.
       "justification": "<1 factual sentence>"
     }},
     "actionability": {{
-      "score_global": <1-5>,
       "contains_concrete_problem": <true|false>,
       "contains_applicable_advice": <true|false>,
-      "contains_precise_use_case": <true|false>,
       "justification": "<1 sentence with example from conversation>"
     }},
     "content_type": {{
-      "personal_opinion": <true|false>,
-      "concrete_vs_vague_problem": <true|false>,
-      "suggestion_feature_request": <true|false>,
-      "emotion_frustration_satisfaction": <true|false>,
-      "competitor_comparison": <true|false>
+      "suggestion_feature_request": <true|false>
     }},
     "profile": {{
-      "engagement_global": <1-5>,
       "elaboration": "<short|medium|detailed>",
-      "coherence": "<low|medium|high>",
-      "perceived_expertise": <1-5>
+      "coherence": "<low|medium|high>"
     }},
     "turn_progression": [
       {{
@@ -345,30 +296,22 @@ def flatten(r):
         "conv_ended_properly":  r.get("conv_ended_properly"),
         "last_msg_type":        r.get("last_msg_type",""),
         "ok":                   r.get("ok",False),
-        # Quality
+        # Quality (all 5 subscores + global kept)
         "quality_global":       q.get("score_global"),
         "quality_precision":    q.get("score_precision"),
         "quality_examples":     q.get("score_examples"),
         "quality_relevance":    q.get("score_relevance"),
         "quality_richness":     q.get("score_richness"),
         "quality_justification":q.get("justification",""),
-        # Actionability
-        "action_global":        act.get("score_global"),
+        # Actionability (action_global REMOVED; concrete_pb and advice kept)
         "action_concrete_pb":   int(act.get("contains_concrete_problem",False)),
         "action_advice":        int(act.get("contains_applicable_advice",False)),
-        "action_use_case":      int(act.get("contains_precise_use_case",False)),
         "action_justification": act.get("justification",""),
-        # Content type
-        "content_opinion":      int(cnt.get("personal_opinion",False)),
-        "content_concrete_pb":  int(cnt.get("concrete_vs_vague_problem",False)),
+        # Content type (only suggestion kept; opinion/emotion/competitor/concrete_pb REMOVED)
         "content_suggestion":   int(cnt.get("suggestion_feature_request",False)),
-        "content_emotion":      int(cnt.get("emotion_frustration_satisfaction",False)),
-        "content_competitor":   int(cnt.get("competitor_comparison",False)),
-        # Profile
-        "profile_engagement":   prf.get("engagement_global"),
+        # Profile (engagement and expertise REMOVED; elaboration and coherence kept)
         "profile_elaboration":  prf.get("elaboration",""),
         "profile_coherence":    prf.get("coherence",""),
-        "profile_expertise":    prf.get("perceived_expertise"),
         # Breakpoint
         "breakpoint_exists":    int(brk.get("exists",False)),
         "breakpoint_turn":      brk.get("turn"),
