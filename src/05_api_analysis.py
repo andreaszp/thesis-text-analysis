@@ -122,6 +122,9 @@ CONTENT TYPE:
 suggestion_feature_request:
   true = Participant explicitly proposes a feature or improvement
   false = No concrete suggestion
+emotion_frustration_satisfaction:
+  true = Participant expresses a clear emotion with at least some context
+  false = Purely factual tone, no emotion expressed
 
 PARTICIPANT PROFILE:
 elaboration:
@@ -184,6 +187,7 @@ Reply ONLY with valid JSON, no markdown, no text before or after.
     }},
     "content_type": {{
       "suggestion_feature_request": <true|false>
+      "emotion_frustration_satisfaction": <true|false>
     }},
     "profile": {{
       "elaboration": "<short|medium|detailed>",
@@ -318,6 +322,7 @@ def flatten(r):
         "action_justification": act.get("justification",""),
         # Content type (only suggestion kept; opinion/emotion/competitor/concrete_pb REMOVED)
         "content_suggestion":   int(cnt.get("suggestion_feature_request",False)),
+        "content_emotion":      int(cnt.get("emotion_frustration_satisfaction",False)),
         # Profile (engagement and expertise REMOVED; elaboration and coherence kept)
         "profile_elaboration":  prf.get("elaboration",""),
         "profile_coherence":    prf.get("coherence",""),
