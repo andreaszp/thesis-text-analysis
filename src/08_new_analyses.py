@@ -192,7 +192,7 @@ def load_merged():
         df_base = df_base.merge(df_agg2, on=["ResponseId","version"], how="left")
 
     # Merge AI scores
-    if not df_ai.empty and "respondent_id" in df9.columns:
+    if not df9.empty and "respondent_id" in df9.columns:
         df9b = df9.rename(columns={"respondent_id":"ResponseId"})
         ai_keep = [c for c in df9b.columns if c not in df_base.columns or c=="ResponseId"]
         df_base = df_base.merge(df9b[ai_keep], on="ResponseId", how="left")
@@ -260,6 +260,7 @@ def compute_correlations(df):
         "action_concrete_pb": "Concrete problem",
         "action_advice":      "Applicable advice",
         "action_use_case":    "Precise use case",
+        "content_emotion":    "Emotion expressed",
     }
     psy_vars = {
         "Perceived Manipulati_1_num": "PM1 Freedom threat",
@@ -440,6 +441,7 @@ def compute_tone_comparisons(df):
         run_chi2(df,"action_concrete_pb","Contains concrete problem"),
         run_chi2(df,"action_advice","Contains applicable advice"),
         run_chi2(df,"action_use_case","Contains precise use case"),
+        run_chi2(df,"content_emotion","Emotion / frustration expressed"),
     ]
     # Perception IA — 12 items t-tests
     psy_tests = [
@@ -814,5 +816,4 @@ def run():
 
 if __name__ == "__main__":
     # Load df_ai separately to avoid scope issue
-    df_ai = pd.read_json(OUTPUT_DIR/"df_ai.json") if (OUTPUT_DIR/"df_ai.json").exists() else pd.DataFrame()
     run()
