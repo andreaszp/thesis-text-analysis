@@ -4,6 +4,19 @@ Block 2 — Step 4: Full synthesis of all analyses.
 Merges metrics + AI results + Likert scores per participant.
 Runs t-tests, chi2, correlations, compliance analysis, dropout analysis.
 Saves: outputs/synthesis.json, df_merged.json
+
+VARIABLES REMOVED vs previous version:
+- profile_engagement  (r=0.937 with quality_global)
+- profile_expertise   (r=0.827 with quality_global)
+- action_global       (r=0.794 with quality_global)
+- avg_ttr             (r=-0.788 with avg_words_per_msg — length artefact)
+- avg_sentiment       (r=0.590 with avg_words_per_msg — length artefact)
+- pct_questions       (quasi-zero base rate)
+- content_competitor  (not relevant to thesis scope)
+- content_suggestion  (r=0.966 with action_advice — duplicate)
+- content_concrete_pb (duplicate of action_concrete_pb)
+- content_opinion     (95% base rate — no discriminant power)
+- content_emotion     (removed per variable reduction)
 """
 import sys, json
 from pathlib import Path
@@ -43,7 +56,6 @@ def sig_label(p):
     return "ns"
 
 def ttest(df, col, label):
-    """Independent t-test FL_21 vs FL_22 for a numeric column."""
     g21 = df[df["version"]=="FL_21"][col].dropna().values
     g22 = df[df["version"]=="FL_22"][col].dropna().values
     if len(g21) < 2 or len(g22) < 2: return None
@@ -58,7 +70,7 @@ def ttest(df, col, label):
         "n_fl22":     len(g22),
         "mean_fl22":  round(float(np.mean(g22)), 3),
         "sd_fl22":    round(float(np.std(g22, ddof=1)), 3),
-        "median_fl22":round(float(np.median(g22)), 3),
+        "median_fl22":round(float(np.median(g22, )), 3),
         "delta":      round(float(np.mean(g21)-np.mean(g22)), 3),
         "t":          round(float(t_s), 4),
         "p":          round(float(p_v), 4),
@@ -68,7 +80,6 @@ def ttest(df, col, label):
     }
 
 def chi2_test(df, col, label):
-    """Chi2 test for a binary column (0/1)."""
     try:
         ct = pd.crosstab(df["version"], df[col])
         if ct.shape[1] < 2: return None
@@ -89,7 +100,6 @@ def chi2_test(df, col, label):
         return None
 
 def pearson_corr(df, col_x, col_y, lbl_x, lbl_y):
-    """Pearson correlation between two numeric columns."""
     tmp = df[[col_x, col_y]].dropna()
     if len(tmp) < 10: return None
     r, p = pearsonr(tmp[col_x], tmp[col_y])
@@ -108,23 +118,19 @@ def pearson_corr(df, col_x, col_y, lbl_x, lbl_y):
 # ================================================================
 
 def load_all():
-    """Load all intermediate JSON files and merge on one row per participant."""
     df_clean = pd.read_json(OUTPUT_DIR/"df_clean.json")
     df_agg   = pd.read_json(OUTPUT_DIR/"df_agg.json")
     df_ai    = pd.read_json(OUTPUT_DIR/"df_ai.json")   if (OUTPUT_DIR/"df_ai.json").exists()   else pd.DataFrame()
     df_prog  = pd.read_json(OUTPUT_DIR/"df_progression.json") if (OUTPUT_DIR/"df_progression.json").exists() else pd.DataFrame()
 
-    # Keep only needed columns from df_clean
     keep = ["ResponseId","FL_13_DO","n_turns","n_bot_msgs"] + \
            [nc for nc in NUM_COLS if nc in df_clean.columns]
     df_base = df_clean[[c for c in keep if c in df_clean.columns]].copy()
     df_base.rename(columns={"FL_13_DO":"version"}, inplace=True)
 
-    # Merge aggregated metrics
     df_agg2 = df_agg.rename(columns={"respondent":"ResponseId"})
     df = df_base.merge(df_agg2, on=["ResponseId","version"], how="left")
 
-    # Merge AI results
     if not df_ai.empty and "respondent_id" in df_ai.columns:
         df_ai2 = df_ai.rename(columns={"respondent_id":"ResponseId"})
         ai_cols = [c for c in df_ai2.columns if c not in df.columns or c == "ResponseId"]
@@ -138,25 +144,21 @@ def load_all():
 # ================================================================
 
 def run_all_ttests(df):
-    """T-tests for all continuous DVs by chatbot tone."""
+    """T-tests for retained continuous DVs by chatbot tone.
+    
+    REMOVED: profile_engagement, profile_expertise, action_global,
+             avg_ttr, avg_sentiment, pct_questions
+    """
     continuous = [
-        # AI quality scores
+        # AI quality scores (all subscores + global retained)
         ("quality_global",      "AI quality score (global 1-5)"),
         ("quality_precision",   "AI quality — precision (1-5)"),
         ("quality_examples",    "AI quality — examples (1-5)"),
         ("quality_relevance",   "AI quality — relevance (1-5)"),
         ("quality_richness",    "AI quality — richness (1-5)"),
-        # AI actionability
-        ("action_global",       "AI actionability (global 1-5)"),
-        # AI profile
-        ("profile_engagement",  "AI engagement score (1-5)"),
-        ("profile_expertise",   "AI perceived expertise (1-5)"),
-        # Computed metrics
+        # Computed text metrics (ttr/sentiment/pct_questions REMOVED)
         ("avg_words_per_msg",   "Avg words per message"),
         ("avg_word_len",        "Avg word length"),
-        ("avg_ttr",             "Lexical richness (TTR)"),
-        ("pct_questions",       "% messages with '?'"),
-        ("avg_sentiment",       "Avg VADER sentiment"),
         # Turns
         ("n_turns",             "Number of conversation turns"),
         ("breakpoint_turn",     "Breakpoint turn (if exists)"),
@@ -176,16 +178,16 @@ def run_all_ttests(df):
     return [r for r in results if r]
 
 def run_all_chi2(df):
-    """Chi2 tests for all binary DVs by chatbot tone."""
+    """Chi2 tests for retained binary DVs by chatbot tone.
+    
+    REMOVED: content_competitor, content_suggestion (dup. action_advice),
+             content_concrete_pb (dup. action_concrete_pb),
+             content_opinion (95% base rate), content_emotion
+    """
     binary = [
         ("action_concrete_pb",  "Contains concrete problem"),
-        ("action_advice",       "Contains applicable advice"),
+        ("action_advice",       "Contains applicable advice / feature request"),
         ("action_use_case",     "Contains precise use case"),
-        ("content_opinion",     "Personal opinion expressed"),
-        ("content_concrete_pb", "Concrete vs vague problem"),
-        ("content_suggestion",  "Feature request / suggestion"),
-        ("content_emotion",     "Emotion / frustration expressed"),
-        ("content_competitor",  "Competitor reference"),
         ("breakpoint_exists",   "Breakpoint detected"),
         ("completed_fully",     "Completed conversation fully"),
         ("bot_drift",           "Chatbot tone drift detected"),
@@ -200,35 +202,42 @@ def run_all_chi2(df):
     return [r for r in results if r]
 
 def run_correlations(df):
-    """Pearson correlations between relevant pairs of DVs."""
+    """Pearson correlations between retained DV pairs.
+    
+    REMOVED from pairs: profile_engagement, profile_expertise, action_global,
+                        avg_ttr, avg_sentiment, pct_questions,
+                        content_competitor, content_suggestion, content_opinion, content_emotion
+    """
     pairs = [
-        # Cross-validation: computed metrics vs AI scores
-        ("avg_words_per_msg","quality_global",     "Avg words/msg",      "AI quality global"),
-        ("avg_ttr",          "quality_richness",   "Lexical richness",   "AI richness score"),
-        ("avg_word_len",     "quality_precision",  "Avg word length",    "AI precision score"),
-        ("avg_words_per_msg","profile_engagement", "Avg words/msg",      "AI engagement"),
-        # Between text DVs
-        ("quality_global",   "action_global",      "Quality global",     "Actionability global"),
-        ("profile_engagement","quality_global",    "Engagement",         "Quality global"),
-        ("profile_expertise","action_global",      "Perceived expertise","Actionability"),
-        ("n_turns",          "quality_global",     "N turns",            "Quality global"),
-        ("breakpoint_turn",  "quality_global",     "Breakpoint turn",    "Quality global"),
+        # Cross-validation: computed text metrics vs AI quality scores
+        ("avg_words_per_msg","quality_global",      "Avg words/msg",        "AI quality global"),
+        ("avg_word_len",     "quality_precision",   "Avg word length",      "AI precision score"),
+        ("avg_words_per_msg","quality_richness",    "Avg words/msg",        "AI richness score"),
+        ("n_turns",          "quality_global",      "N turns",              "Quality global"),
+        ("breakpoint_turn",  "quality_global",      "Breakpoint turn",      "Quality global"),
+        # Between AI quality dimensions
+        ("quality_global",   "quality_richness",    "Quality global",       "Quality richness"),
+        ("quality_global",   "quality_examples",    "Quality global",       "Quality examples"),
+        # Quality vs actionability
+        ("quality_global",   "action_concrete_pb",  "Quality global",       "Concrete problem"),
+        ("quality_global",   "action_advice",       "Quality global",       "Applicable advice"),
         # Compliance vs markers
-        ("bot_compliance_score","bot_informal_addr","Brief compliance",  "Informal address"),
-        ("bot_compliance_score","bot_emojis",       "Brief compliance",  "Emojis used"),
-        ("bot_compliance_score","bot_n_friendly_words","Brief compliance","N friendly words"),
-        ("bot_compliance_score","bot_n_encouragements","Brief compliance","N encouragements"),
-        ("bot_score_friendly","bot_compliance_score","Friendly score",   "Brief compliance"),
+        ("bot_compliance_score","bot_informal_addr","Brief compliance",     "Informal address"),
+        ("bot_compliance_score","bot_emojis",       "Brief compliance",     "Emojis used"),
+        ("bot_compliance_score","bot_n_friendly_words","Brief compliance",  "N friendly words"),
+        ("bot_compliance_score","bot_n_encouragements","Brief compliance",  "N encouragements"),
+        ("bot_score_friendly","bot_compliance_score","Friendly score",      "Brief compliance"),
         # Chatbot tone vs participant quality
-        ("bot_score_friendly","quality_global",    "Chatbot friendly score","Participant quality"),
-        ("bot_score_friendly","profile_engagement","Chatbot friendly score","Participant engagement"),
-        ("bot_compliance_score","quality_global",  "Brief compliance",   "Participant quality"),
+        ("bot_score_friendly","quality_global",     "Chatbot friendly score","Quality global"),
+        ("bot_compliance_score","quality_global",   "Brief compliance",     "Quality global"),
+        # Breakpoint and turns
+        ("n_turns",          "breakpoint_turn",     "N turns",              "Breakpoint turn"),
+        ("n_turns",          "action_concrete_pb",  "N turns",              "Concrete problem"),
     ]
-    # Add Likert correlations with quality (evaluation_1..6_num)
+    # Add Likert correlations with quality
     likert_eval = [nc for nc in NUM_COLS[:6] if nc in df.columns]
     for nc, lbl in zip(likert_eval, Q_LABELS[:6]):
         pairs.append(("quality_global", nc, "AI quality global", lbl))
-        pairs.append(("profile_engagement", nc, "AI engagement", lbl))
 
     results = []
     for cx, cy, lx, ly in pairs:
@@ -238,7 +247,6 @@ def run_correlations(df):
     return results
 
 def run_compliance_analysis(df):
-    """Compliance analysis: per-version summary + marker correlations."""
     out = {}
     for ver in ["FL_21","FL_22"]:
         g = df[df["version"]==ver]
@@ -259,20 +267,18 @@ def run_compliance_analysis(df):
     return {"per_version": out, "ttest_compliance": t_comp}
 
 def run_dropout_analysis(df):
-    """Profile comparison: dropouts vs completers."""
     df = df.copy()
     df["dropout"] = (df["completed_fully"] == 0).astype(int) if "completed_fully" in df.columns else 0
 
     dropouts   = df[df["dropout"]==1]
     completers = df[df["dropout"]==0]
 
+    # Profile vars: engagement and expertise REMOVED; quality and n_turns kept
     profile_vars = [
         ("quality_global",    "AI quality global"),
-        ("action_global",     "AI actionability"),
-        ("profile_engagement","AI engagement"),
-        ("profile_expertise", "AI perceived expertise"),
         ("n_turns",           "N turns"),
         ("avg_words_per_msg", "Avg words/message"),
+        ("avg_word_len",      "Avg word length"),
     ]
     comparison = []
     for col, lbl in profile_vars:
@@ -295,9 +301,15 @@ def run_dropout_analysis(df):
             "effect_size":    interpret_d(d),
         })
 
-    # End type distribution
     fin_dist = {"global": {}}
     if "end_type" in df.columns:
+        # Normalise end_type values (fix encoding variants from AI output)
+        end_type_map = {
+            "mineral_response":  "minimal_response",
+            "minimale_response": "minimal_response",
+            "minimal response":  "minimal_response",
+        }
+        df["end_type"] = df["end_type"].replace(end_type_map)
         fin_dist["global"] = {k: round(v*100,1)
                               for k,v in df["end_type"].value_counts(normalize=True).items()}
         for ver in ["FL_21","FL_22"]:
@@ -316,7 +328,6 @@ def run_dropout_analysis(df):
     }
 
 def run_progression_analysis(df_prog):
-    """Average quality score per turn and version for curve plotting."""
     if df_prog.empty: return {}
     pivot = df_prog.groupby(["version","turn"])["quality_score"].agg(
         mean="mean", sd="std", n="count"
