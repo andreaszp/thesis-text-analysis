@@ -186,7 +186,7 @@ Reply ONLY with valid JSON, no markdown, no text before or after.
       "justification": "<1 sentence with example from conversation>"
     }},
     "content_type": {{
-      "suggestion_feature_request": <true|false>
+      "suggestion_feature_request": <true|false>,
       "emotion_frustration_satisfaction": <true|false>
     }},
     "profile": {{
@@ -320,7 +320,7 @@ def flatten(r):
         "action_concrete_pb":   int(act.get("contains_concrete_problem",False)),
         "action_advice":        int(act.get("contains_applicable_advice",False)),
         "action_justification": act.get("justification",""),
-        # Content type (only suggestion kept; opinion/emotion/competitor/concrete_pb REMOVED)
+        # Content type (only suggestion kept; opinion/competitor/concrete_pb REMOVED)
         "content_suggestion":   int(cnt.get("suggestion_feature_request",False)),
         "content_emotion":      int(cnt.get("emotion_frustration_satisfaction",False)),
         # Profile (engagement and expertise REMOVED; elaboration and coherence kept)
