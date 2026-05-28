@@ -540,7 +540,34 @@ def compute_tone_mediations(df):
         "label": "Q4.5b — Tone → Competence_2(Morality) → E2(Engagement felt)",
         "model": run_mediation(df, "tone", "Competence_2_num", "evaluation_2_num"),
     }
+  # Q_emotion_a — Ton → content_emotion → quality (5 subscores + global)
+    for q_col, q_lbl in [
+        ("quality_global",    "Quality global"),
+        ("quality_precision", "Quality precision"),
+        ("quality_examples",  "Quality examples"),
+        ("quality_relevance", "Quality relevance"),
+        ("quality_richness",  "Quality richness"),
+    ]:
+        key = f"tone_emotion_{q_col}"
+        results[key] = {
+            "label": f"Tone → Emotion expressed → {q_lbl}",
+            "model": run_mediation(df, "tone", "content_emotion", q_col),
+        }
 
+    # Q_emotion_b — Ton → content_emotion → psychological + evaluation DVs
+    for dv_col, dv_lbl in [
+        ("Perceived Manipulati_1_num", "PM1 Freedom threat"),
+        ("Perceived Manipulati_2_num", "PM2 Decision override"),
+        ("Competence_1_num",           "Comp1 Skills judgment"),
+        ("Sense of Independenc_1_num", "Ind1 AI plans & goals"),
+        ("evaluation_2_num",           "E2 Engagement felt"),
+        ("evaluation_3_num",           "E3 Chatbot appreciation"),
+    ]:
+        key = f"tone_emotion_{dv_col}"
+        results[key] = {
+            "label": f"Tone → Emotion expressed → {dv_lbl}",
+            "model": run_mediation(df, "tone", "content_emotion", dv_col),
+        }
     return results
 
 # ================================================================
@@ -608,6 +635,32 @@ def compute_regressions_noton(df):
         "label": "Q4.1 — 12 Perception AI variables → E3(Chatbot appreciation) [multiple regression]",
         "model": run_regression(df, [c for c,_ in psy_avail], "evaluation_3_num", [l for _,l in psy_avail]),
     }
+  # content_emotion → quality (5 subscores + global)
+    for q_col, q_lbl in [
+        ("quality_global",    "Quality global"),
+        ("quality_precision", "Quality precision"),
+        ("quality_examples",  "Quality examples"),
+        ("quality_relevance", "Quality relevance"),
+        ("quality_richness",  "Quality richness"),
+    ]:
+        results[f"emotion_{q_col}"] = {
+            "label": f"Content emotion → {q_lbl}",
+            "model": run_regression(df, ["content_emotion"], q_col, ["Emotion expressed (0/1)"]),
+        }
+
+    # content_emotion → psychological perception variables
+    for psy_col, psy_lbl in [
+        ("Perceived Manipulati_1_num", "PM1 Freedom threat"),
+        ("Perceived Manipulati_2_num", "PM2 Decision override"),
+        ("Competence_1_num",           "Comp1 Skills judgment"),
+        ("Sense of Independenc_1_num", "Ind1 AI plans & goals"),
+        ("evaluation_2_num",           "E2 Engagement felt"),
+        ("evaluation_3_num",           "E3 Chatbot appreciation"),
+    ]:
+        results[f"emotion_{psy_col}"] = {
+            "label": f"Content emotion → {psy_lbl}",
+            "model": run_regression(df, ["content_emotion"], psy_col, ["Emotion expressed (0/1)"]),
+        }
     # Q5.2 — breakpoint_turn → quality
     results["Q5.2_bkpt_quality"] = {
         "label": "Q5.2 — Breakpoint turn → Quality global",
@@ -632,6 +685,17 @@ def compute_regressions_noton(df):
                     "effect_size": interpret_d(d),
                 },
             }
+    # content_emotion → E2(engagement) → quality_global
+    results["emotion_E2_quality"] = {
+        "label": "Emotion expressed → E2 (Engagement felt) → Quality global",
+        "model": run_mediation(df, "content_emotion", "evaluation_2_num", "quality_global"),
+    }
+
+    # content_emotion → E3(appreciation) → E6(preference)
+    results["emotion_E3_E6"] = {
+        "label": "Emotion expressed → E3 (Chatbot appreciation) → E6 (Chatbot preference)",
+        "model": run_mediation(df, "content_emotion", "evaluation_3_num", "evaluation_6_num"),
+    }
     return results
 
 # ================================================================
