@@ -826,7 +826,21 @@ def build_sheet11(wb, med_tone, regression_noton):
         "Q3.4_tone_E3_E6":      "Q3.4 — Tone → E3 (Chatbot appreciation) → E6 (Chatbot preference)",
         "Q4.5a_tone_comp1_E2":  "Q4.5a — Tone → Competence_1 (Skills) → E2 (Engagement felt)",
         "Q4.5b_tone_comp2_E2":  "Q4.5b — Tone → Competence_2 (Morality) → E2 (Engagement felt)",
+        # Tone → emotion → quality (6 models)
+        "tone_emotion_quality_global":    "Tone → Emotion expressed → Quality global",
+        "tone_emotion_quality_precision": "Tone → Emotion expressed → Quality precision",
+        "tone_emotion_quality_examples":  "Tone → Emotion expressed → Quality examples",
+        "tone_emotion_quality_relevance": "Tone → Emotion expressed → Quality relevance",
+        "tone_emotion_quality_richness":  "Tone → Emotion expressed → Quality richness",
+        # Tone → emotion → psych/eval DVs
+        "tone_emotion_Perceived Manipulati_1_num": "Tone → Emotion expressed → PM1 Freedom threat",
+        "tone_emotion_Perceived Manipulati_2_num": "Tone → Emotion expressed → PM2 Decision override",
+        "tone_emotion_Competence_1_num":            "Tone → Emotion expressed → Comp1 Skills judgment",
+        "tone_emotion_Sense of Independenc_1_num":  "Tone → Emotion expressed → Ind1 AI plans & goals",
+        "tone_emotion_evaluation_2_num":            "Tone → Emotion expressed → E2 Engagement felt",
+        "tone_emotion_evaluation_3_num":            "Tone → Emotion expressed → E3 Chatbot appreciation",
     }
+        
     # Summary table first
     summary_rows=[]
     for key,lbl in med_labels.items():
@@ -894,7 +908,13 @@ def build_sheet12(wb, regression_noton):
     row=4
     blocks=[
         ("BLOC 1 — QUALITY PREDICTORS",C_QUALITY,[
-            "Q2.1_words_quality","Q2.2_E2_quality","Q2.3_E4_quality"]),
+            "Q2.1_words_quality","Q2.2_E2_quality","Q2.3_E4_quality",
+            "emotion_quality_global","emotion_quality_precision",
+            "emotion_quality_examples","emotion_quality_relevance","emotion_quality_richness"]),
+        ("BLOC 1b — EMOTION → PSYCHOLOGICAL & EVALUATION VARIABLES",C_PSY,[
+            "emotion_Perceived Manipulati_1_num","emotion_Perceived Manipulati_2_num",
+            "emotion_Competence_1_num","emotion_Sense of Independenc_1_num",
+            "emotion_evaluation_2_num","emotion_evaluation_3_num"]),
         ("BLOC 2 — REUSE INTENTION & CHATBOT PREFERENCE",C_EVAL,[
             "Q3.1_multi_E5","Q3.1b_full_multi_E5","Q3.2_quality_E6","Q3.2b_E1_E2_quality_E6"]),
         ("BLOC 3 — PERCEPTION AI → CHATBOT APPRECIATION",C_PSY,[
@@ -982,7 +1002,17 @@ def build_sheet13(wb, med_noton):
             row=write_mediation_block(ws,item.get("result",{}),row,lbl)
     else:
         ws.cell(row,1,value="No significant mediation found in Q4.4 models.").font=Font(italic=True,name="Arial",size=9,color="922B21")
+    row+=3
+    # Emotion mediations
+    section_title(ws,"EMOTION MEDIATIONS — Content emotion as IV or mediator",C_ACTION,13,row); row+=2
 
+    em_E2_q = med_noton.get("emotion_E2_quality",{})
+    row = write_mediation_block(ws, em_E2_q.get("model",{}), row,
+                                "Emotion expressed → E2 (Engagement felt) → Quality global")
+
+    em_E3_E6 = med_noton.get("emotion_E3_E6",{})
+    row = write_mediation_block(ws, em_E3_E6.get("model",{}), row,
+                                "Emotion expressed → E3 (Chatbot appreciation) → E6 (Chatbot preference)")
     for j,w in enumerate([45,22,22,22,6,8,8,10,10,10,10,30],1): ws.column_dimensions[get_column_letter(j)].width=w
     ws.freeze_panes="A4"
 
